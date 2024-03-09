@@ -234,11 +234,15 @@ void q_sort(struct list_head *head, bool descend)
                 if (strcmp(ele1->value, ele2->value) < 0) {
                     list_move(x, x->next);
                     xsafe = x;
+                    if (ysafe == x)
+                        ysafe = x->prev;
                 }
             } else {
                 if (strcmp(ele1->value, ele2->value) > 0) {
                     list_move(x, x->next);
                     xsafe = x;
+                    if (ysafe == x)
+                        ysafe = x->prev;
                 }
             }
         }

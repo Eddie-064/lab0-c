@@ -172,7 +172,7 @@ bool q_delete_dup(struct list_head *head)
 void q_swap(struct list_head *head)
 {
     // https://leetcode.com/problems/swap-nodes-in-pairs/
-    if (!head)
+    if (!head || list_empty(head))
         return;
     struct list_head *pos;
     list_for_each (pos, head) {
@@ -198,13 +198,12 @@ void q_swap(struct list_head *head)
 /* Reverse elements in queue */
 void q_reverse(struct list_head *head)
 {
-    if (!head)
+    if (!head || list_empty(head))
         return;
     struct list_head q;
     INIT_LIST_HEAD(&q);
     struct list_head *pos, *tmp;
     list_for_each_safe (pos, tmp, head) {
-        // list_move(pos, &q);
         list_del(pos);
         list_add(pos, &q);
     }
@@ -223,7 +222,7 @@ void q_reverseK(struct list_head *head, int k)
 /* Sort elements of queue in ascending/descending order */
 void q_sort(struct list_head *head, bool descend)
 {
-    if (!head)
+    if (!head || list_empty(head))
         return;
     struct list_head *y, *x, *ysafe, *xsafe;
     list_for_each_safe (y, ysafe, head) {
@@ -258,8 +257,8 @@ void q_sort(struct list_head *head, bool descend)
 int q_ascend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    if (!head)
-        return false;
+    if (!head || list_empty(head))
+        return 0;
     struct list_head *pos, *safe;
     for (pos = (head)->prev, safe = pos->prev; pos != (head);
          pos = safe, safe = pos->prev) {
@@ -280,8 +279,8 @@ int q_ascend(struct list_head *head)
 int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    if (!head)
-        return false;
+    if (!head || list_empty(head))
+        return 0;
     struct list_head *pos, *safe;
     for (pos = (head)->prev, safe = pos->prev; pos != (head);
          pos = safe, safe = pos->prev) {

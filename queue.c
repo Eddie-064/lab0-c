@@ -86,7 +86,9 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     if (list_empty(origin))
         return NULL;
     element_t *ele = list_first_entry(origin, element_t, list);
-    memcpy(sp, ele->value, bufsize);
+    memcpy(sp, ele->value,
+           strlen(ele->value) > bufsize ? bufsize - 1 : strlen(ele->value) + 1);
+    sp[bufsize - 1] = '\0';
     list_del(&ele->list);
     return ele;
 }
@@ -100,7 +102,9 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
     if (list_empty(origin))
         return NULL;
     element_t *ele = list_last_entry(origin, element_t, list);
-    memcpy(sp, ele->value, bufsize);
+    memcpy(sp, ele->value,
+           strlen(ele->value) > bufsize ? bufsize - 1 : strlen(ele->value) + 1);
+    sp[bufsize - 1] = '\0';
     list_del(&ele->list);
     return ele;
 }

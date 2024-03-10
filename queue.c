@@ -259,12 +259,13 @@ int q_ascend(struct list_head *head)
     struct list_head *pos, *safe;
     for (pos = (head)->prev, safe = pos->prev; pos != (head);
          pos = safe, safe = pos->prev) {
-        element_t *ele = list_entry(pos, element_t, list);
-        const element_t *prev = list_entry(pos->prev, element_t, list);
+        const element_t *ele = list_entry(pos, element_t, list);
+        element_t *prev = list_entry(pos->prev, element_t, list);
         if (pos->prev != head && strcmp(prev->value, ele->value) > 0) {
-            list_del(pos);
-            free(ele->value);
-            free(ele);
+            list_del(&prev->list);
+            free(prev->value);
+            free(prev);
+            safe = pos;
         }
     }
     return q_size(head);
@@ -280,12 +281,13 @@ int q_descend(struct list_head *head)
     struct list_head *pos, *safe;
     for (pos = (head)->prev, safe = pos->prev; pos != (head);
          pos = safe, safe = pos->prev) {
-        element_t *ele = list_entry(pos, element_t, list);
-        const element_t *prev = list_entry(pos->prev, element_t, list);
-        if (pos->prev != head && strcmp(prev->value, ele->value) > 0) {
-            list_del(pos);
-            free(ele->value);
-            free(ele);
+        const element_t *ele = list_entry(pos, element_t, list);
+        element_t *prev = list_entry(pos->prev, element_t, list);
+        if (pos->prev != head && strcmp(prev->value, ele->value) < 0) {
+            list_del(&prev->list);
+            free(prev->value);
+            free(prev);
+            safe = pos;
         }
     }
     return q_size(head);

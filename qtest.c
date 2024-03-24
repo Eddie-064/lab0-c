@@ -1196,6 +1196,8 @@ int main(int argc, char *argv[])
     int level = 4;
     int c;
 
+    printf("pid: %d\n", getpid());
+
     while ((c = getopt(argc, argv, "hv:f:l:")) != -1) {
         switch (c) {
         case 'h':

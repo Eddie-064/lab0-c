@@ -231,37 +231,48 @@ void q_reverseK(struct list_head *head, int k)
     }
 }
 
+static struct list_head *__merge(struct list_head *l1,
+                                 struct list_head *l2,
+                                 bool descend);
+
+static struct list_head *__merge_sort(struct list_head *node, bool descend)
+{
+    LIST_HEAD(head);
+    struct list_head *const prev = node->prev;
+    list_splice_init(node->prev, &head);
+    struct list_head *slow, *fast, *mid;
+    slow = &head;
+    fast = head.next;
+    do {
+        slow = slow->next;
+        fast = fast->next->next;
+    } while (fast != &head && fast->next != &head);
+    mid = slow;
+    LIST_HEAD(hleft);
+    struct list_head *left, *right;
+
+    list_cut_position(&hleft, &head, mid);
+    left = hleft.next;
+    right = head.next;
+
+    if (!list_is_singular(&hleft))
+        left = __merge_sort(hleft.next, descend);
+
+    if (!list_is_singular(&head))
+        right = __merge_sort(head.next, descend);
+
+    __merge(left, right, descend);
+    list_splice_init(&hleft, prev);
+
+    return prev->next;
+}
+
 /* Sort elements of queue in ascending/descending order */
 void q_sort(struct list_head *head, bool descend)
 {
-    if (!head || list_empty(head))
+    if (!head || list_empty(head) || list_is_singular(head))
         return;
-    struct list_head *y, *x, *ysafe, *xsafe;
-    list_for_each_safe (y, ysafe, head) {
-        if (y->next == head)
-            break;
-        list_for_each_safe (x, xsafe, head) {
-            if (x->next == head)
-                break;
-            const element_t *ele1 = list_entry(x, element_t, list);
-            const element_t *ele2 = list_entry(x->next, element_t, list);
-            if (descend) {
-                if (strcmp(ele1->value, ele2->value) < 0) {
-                    list_move(x, x->next);
-                    xsafe = x;
-                    if (ysafe == x)
-                        ysafe = x->prev;
-                }
-            } else {
-                if (strcmp(ele1->value, ele2->value) > 0) {
-                    list_move(x, x->next);
-                    xsafe = x;
-                    if (ysafe == x)
-                        ysafe = x->prev;
-                }
-            }
-        }
-    }
+    __merge_sort(head->next, descend);
 }
 
 /* Remove every node which has a node with a strictly less value anywhere to
@@ -308,14 +319,18 @@ int q_descend(struct list_head *head)
     return q_size(head);
 }
 
-static void __merge(struct list_head *l1, struct list_head *l2, bool descend)
+static struct list_head *__merge(struct list_head *l1,
+                                 struct list_head *l2,
+                                 bool descend)
 {
     if (!l1 || !l2)
-        return;
+        return l1;
+    struct list_head *const prev1 = l1->prev;
+    struct list_head *const prev2 = l2->prev;
     LIST_HEAD(tmp);
-    while (!list_empty(l1) && !list_empty(l2)) {
-        element_t *ele1 = list_first_entry(l1, element_t, list);
-        element_t *ele2 = list_first_entry(l2, element_t, list);
+    while (!list_empty(prev1) && !list_empty(prev2)) {
+        element_t *ele1 = list_first_entry(prev1, element_t, list);
+        element_t *ele2 = list_first_entry(prev2, element_t, list);
         if (descend) {
             element_t *node =
                 strcmp(ele1->value, ele2->value) > 0 ? ele1 : ele2;
@@ -326,9 +341,10 @@ static void __merge(struct list_head *l1, struct list_head *l2, bool descend)
             list_move_tail(&node->list, &tmp);
         }
     }
-    list_splice_tail_init(l1, &tmp);
-    list_splice_tail_init(l2, &tmp);
-    list_splice(&tmp, l1);
+    list_splice_tail_init(prev1, &tmp);
+    list_splice_tail_init(prev2, &tmp);
+    list_splice(&tmp, prev1);
+    return prev1->next;
 }
 
 /* Merge all the queues into one sorted queue, which is in ascending/descending
@@ -350,7 +366,7 @@ int q_merge(struct list_head *head, bool descend)
         // merge next queue to the first queue
         if (pos == first_queue)
             continue;
-        __merge(first_queue->q, pos->q, descend);
+        __merge(first_queue->q->next, pos->q->next, descend);
     }
     return q_size(first_queue->q);
 }

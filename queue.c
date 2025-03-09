@@ -180,17 +180,23 @@ int q_ascend(struct list_head *head)
 {
     if (!head || list_empty(head))
         return 0;
-    element_t *ele, *safe = NULL;
+    element_t *ele, *safe;
     int count = 0, total = 0;
-    list_for_each_entry_safe (ele, safe, head, list) {
+    char min = 127;
+
+    for (ele = list_entry((head)->prev, element_t, list),
+        safe = list_entry(ele->list.prev, element_t, list);
+         &ele->list != (head);
+         ele = safe, safe = list_entry(safe->list.prev, element_t, list)) {
         total++;
-        if (ele->list.next == head)
-            break;
-        if (*safe->value < *ele->value) {
+        if (*ele->value > min) {
             list_del(&ele->list);
             q_release_element(ele);
             count++;
+            continue;
         }
+        if (*ele->value < min)
+            min = *ele->value;
     }
     return total - count;
 }
@@ -201,17 +207,23 @@ int q_descend(struct list_head *head)
 {
     if (!head || list_empty(head))
         return 0;
-    element_t *ele, *safe = NULL;
+    element_t *ele, *safe;
     int count = 0, total = 0;
-    list_for_each_entry_safe (ele, safe, head, list) {
+    char max = 0;
+
+    for (ele = list_entry((head)->prev, element_t, list),
+        safe = list_entry(ele->list.prev, element_t, list);
+         &ele->list != (head);
+         ele = safe, safe = list_entry(safe->list.prev, element_t, list)) {
         total++;
-        if (ele->list.next == head)
-            break;
-        if (*safe->value > *ele->value) {
+        if (*ele->value < max) {
             list_del(&ele->list);
             q_release_element(ele);
             count++;
+            continue;
         }
+        if (*ele->value > max)
+            max = *ele->value;
     }
     return total - count;
 }

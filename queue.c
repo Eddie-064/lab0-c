@@ -129,14 +129,20 @@ bool q_delete_dup(struct list_head *head)
     if (!head || list_empty(head))
         return false;
 
+    bool is_this_dup = false, is_next_dup;
     element_t *ele, *safe = NULL;
-    unsigned char hash_table[256] = {0};
+
     list_for_each_entry_safe (ele, safe, head, list) {
-        if (hash_table[(int) ele->value[0] & 0xff] != 0) {
+        if (ele->list.next != head && strcmp(ele->value, safe->value) == 0)
+            is_next_dup = true;
+        else
+            is_next_dup = false;
+
+        if (is_this_dup || is_next_dup) {
             list_del(&ele->list);
             q_release_element(ele);
         }
-        hash_table[(int) ele->value[0] & 0xff]++;
+        is_this_dup = is_next_dup;
     }
     return true;
 }

@@ -273,6 +273,51 @@ int q_descend(struct list_head *head)
  * order */
 int q_merge(struct list_head *head, bool descend)
 {
-    // https://leetcode.com/problems/merge-k-sorted-lists/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+    int count = 0;
+
+    queue_contex_t *chain = list_entry(head->next, queue_contex_t, chain);
+    struct list_head *chain_head, *node, *safe, *merge_queue;
+    merge_queue = chain->q;
+
+    if (!merge_queue)
+        return 0;
+    struct list_head *pos;
+    list_for_each (pos, merge_queue) {
+        count++;
+    }
+    if (list_is_singular(head->next))
+        return count;
+
+    list_for_each (chain_head, &chain->chain) {
+        if (chain_head == head)
+            break;
+        struct list_head *q_head =
+            list_entry(chain_head, queue_contex_t, chain)->q;
+        struct list_head *tmp = merge_queue->next;
+
+        if (!q_head || list_empty(q_head))
+            continue;
+
+        list_for_each_safe (node, safe, q_head) {
+            if (!descend) {
+                while (tmp != merge_queue &&
+                       strcmp(list_entry(tmp, element_t, list)->value,
+                              list_entry(node, element_t, list)->value) < 0) {
+                    tmp = tmp->next;
+                }
+            } else {
+                while (tmp != merge_queue &&
+                       strcmp(list_entry(tmp, element_t, list)->value,
+                              list_entry(node, element_t, list)->value) > 0) {
+                    tmp = tmp->next;
+                }
+            }
+            list_move_tail(node, tmp);
+            count++;
+        }
+    }
+
+    return count;
 }

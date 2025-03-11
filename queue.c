@@ -191,27 +191,100 @@ void q_reverseK(struct list_head *head, int k)
     list_splice(&splice_head, head);
 }
 
+static inline void rebuild_link(struct list_head *head)
+{
+    if (!head)
+        return;
+
+    struct list_head *result = head;
+
+    while (head->next && head->next != result) {
+        head->next->prev = head;
+        head = head->next;
+    }
+    head->next = result;
+    result->prev = head;
+}
+
+static inline struct list_head *merge_TwoLists(struct list_head *L,
+                                               struct list_head *R,
+                                               bool descend)
+{
+    if (!L)
+        return R;
+    if (!R)
+        return L;
+    bool insert_tail = false;
+    struct list_head *safe, *result = L;
+    struct list_head *tmp = L;
+    for (safe = R->next; R != NULL; R = safe, safe = safe->next) {
+        const element_t *rnode = list_entry(R, element_t, list);
+        while (L->next != NULL && strcmp(list_entry(L, element_t, list)->value,
+                                         rnode->value) <= 0) {
+            tmp = L;
+            L = L->next;
+        }
+        if (L->next == NULL) {
+            if (insert_tail || strcmp(list_entry(L, element_t, list)->value,
+                                      rnode->value) <= 0) {
+                // rnode insert to right of L
+                L->next = R;
+                L = L->next;
+                L->next = NULL;
+                insert_tail = true;
+                if (safe == NULL)
+                    break;
+                continue;
+            }
+        }
+        // rnode insert to left of L
+        if (tmp != L) {
+            tmp->next = R;
+            R->next = L;
+            tmp = R;
+        } else {
+            R->next = L;
+            if (tmp == result)
+                result = R;
+            else
+                tmp->next = R;
+            L = R;
+        }
+
+        if (safe == NULL)
+            break;
+    }
+    return result;
+}
+
+static struct list_head *merge_sort(struct list_head *head,
+                                    bool descend,
+                                    int trace)
+{
+    if (!head || !head->next)
+        return head;
+
+    struct list_head *slow = head, *fast = head;
+    for (; fast->next != NULL && fast->next->next != NULL;
+         slow = slow->next, fast = fast->next->next)
+        ;
+    struct list_head *L = head, *R = slow->next;
+    slow->next = NULL;
+    L = merge_sort(L, descend, trace + 1);
+    R = merge_sort(R, descend, trace + 1);
+
+    return merge_TwoLists(L, R, descend);
+}
+
 /* Sort elements of queue in ascending/descending order */
 void q_sort(struct list_head *head, bool descend)
 {
     if (!head || list_empty(head) || list_is_singular(head))
         return;
 
-    struct list_head *node, *tmp;
-    for (node = head->next; node != head;) {
-        struct list_head *target = node;
-        for (tmp = node; tmp != head; tmp = tmp->next) {
-            int result = strcmp(list_entry(target, element_t, list)->value,
-                                list_entry(tmp, element_t, list)->value);
-            if ((descend && result > 0) || (!descend && result < 0)) {
-                target = tmp;
-            }
-        }
-        struct list_head *safe = node->next;
-        list_move(target, head);
-        if (target == node)
-            node = safe;
-    }
+    head->prev->next = NULL;
+    head->next = merge_sort(head->next, descend, 0);
+    rebuild_link(head);
 }
 
 /* Remove every node which has a node with a strictly less value anywhere to

@@ -667,6 +667,102 @@ bool do_sort(int argc, char *argv[])
     return ok && !error_check();
 }
 
+static inline void __node_swap(struct list_head *n1, struct list_head *n2)
+{
+    if (!n1 || !n2)
+        return;
+    struct list_head *const n1_prev = n1->prev, *const n1_next = n1->next;
+
+    if (n1->next == n2) {
+        n1->next = n2->next;
+        n2->next->prev = n1;
+        n1->prev = n2;
+
+        n2->next = n1;
+        n2->prev = n1_prev;
+        n1_prev->next = n2;
+        return;
+    }
+
+    if (n1->prev == n2) {
+        n1->prev = n2->prev;
+        n2->prev->next = n1;
+        n1->next = n2;
+
+        n2->prev = n1;
+        n2->next = n1_next;
+        n1_next->prev = n2;
+        return;
+    }
+
+    n1->next = n2->next;
+    n2->next->prev = n1;
+    n1->prev = n2->prev;
+    n2->prev->next = n1;
+
+    n2->next = n1_next;
+    n1_next->prev = n2;
+    n2->prev = n1_prev;
+    n1_prev->next = n2;
+}
+
+/* Shuffle elements of queue */
+static void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+    struct list_head *old, *new, *safe;
+    uint64_t len = q_size(head);
+    for (new = head->prev, safe = head; new != head;
+         safe = safe->prev, new = safe->prev) {
+        uint64_t count = 0;
+        uint16_t random;
+        randombytes((uint8_t *) &random, sizeof(uint16_t));
+        int position = random % (len - 1);
+        list_for_each(old, head) {
+            if (count++ == position) {
+                len--;
+                // swap
+                __node_swap(old, new);
+                break;
+            }
+        }
+        if (len == 1)
+            break;
+    }
+}
+
+
+static bool do_shuffle(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes no arguments", argv[0]);
+        return false;
+    }
+
+    int cnt = 0;
+    if (!current || !current->q)
+        report(3, "Warning: Calling shuffle on null queue");
+    else
+        cnt = q_size(current->q);
+    error_check();
+
+    if (cnt < 2)
+        report(3, "Warning: Calling shuffle on single node");
+    error_check();
+
+    set_noallocate_mode(true);
+
+    if (current && exception_setup(true))
+        q_shuffle(current->q);
+    exception_cancel();
+
+    set_noallocate_mode(false);
+
+    q_show(3);
+    return !error_check();
+}
+
 static bool do_dm(int argc, char *argv[])
 {
     if (argc != 1) {
@@ -1080,6 +1176,7 @@ static void console_init()
         "[str]");
     ADD_COMMAND(reverse, "Reverse queue", "");
     ADD_COMMAND(sort, "Sort queue in ascending/descending order", "");
+    ADD_COMMAND(shuffle, "Shuffle all nodes in queue", "");
     ADD_COMMAND(size, "Compute queue size n times (default: n == 1)", "[n]");
     ADD_COMMAND(show, "Show queue contents", "");
     ADD_COMMAND(dm, "Delete middle node in queue", "");

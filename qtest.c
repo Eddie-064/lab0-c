@@ -716,9 +716,8 @@ static void q_shuffle(struct list_head *head)
     for (new = head->prev, safe = head; new != head;
          safe = safe->prev, new = safe->prev) {
         uint64_t count = 0;
-        uint16_t random;
-        randombytes((uint8_t *) &random, sizeof(uint16_t));
-        int position = random % (len - 1);
+        double random = ((double) rand()) / ((double) RAND_MAX + 1);
+        int position = (int) (random * (len - 1));
         list_for_each(old, head) {
             if (count++ == position) {
                 len--;
